@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+@theme {
+  --color-panshule-base: #FDF6E3;
+  --color-panshule-crust: #D4A373;
+  --color-panshule-dark: #3E2723;
+  --color-panshule-accent: #E63946;
+  --color-panshule-sage: #CCD5AE;
+}
+
+body {
+  background-color: var(--color-panshule-base);
+  color: var(--color-panshule-dark);
+}
