@@ -27,7 +27,9 @@ export default function Home() {
         <Link href="/stock" className="block w-full bg-panshule-accent text-white font-bold py-3 px-4 rounded-xl shadow-md hover:opacity-90 transition-opacity">
           Entrar a la Despensa
         </Link>
-
+<Link href="/recetas" className="block w-full mt-3 bg-panshule-dark text-white font-bold py-3 px-4 rounded-xl shadow-md hover:opacity-90 transition-opacity">
+  Calcular Recetas
+</Link>
       </div>
     </main>
   );
