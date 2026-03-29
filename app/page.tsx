@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link"; // Importamos Link para poder navegar
 
 export default function Home() {
   return (
@@ -8,7 +9,7 @@ export default function Home() {
         {/* El avatar de Jule */}
         <div className="mx-auto w-32 h-32 relative mb-6 rounded-full overflow-hidden border-4 border-panshule-base shadow-inner bg-panshule-sage/20">
           <Image 
-            src="/jule.png" /* Asegúrate de que el nombre coincida con tu imagen */
+            src="/jule.png" // Asumimos que jule.png está en la carpeta /public
             alt="Jule de Panshule" 
             fill 
             className="object-cover"
@@ -22,10 +23,10 @@ export default function Home() {
           Soy Jule. ¿Qué vamos a hornear (o calcular) hoy?
         </p>
 
-        {/* Un botón de prueba para el futuro */}
-        <button className="w-full bg-panshule-accent text-white font-bold py-3 px-4 rounded-xl shadow-md hover:opacity-90 transition-opacity">
-          Entrar al Sistema
-        </button>
+        {/* El botón NUEVO que te lleva a la despensa (/stock) */}
+        <Link href="/stock" className="block w-full bg-panshule-accent text-white font-bold py-3 px-4 rounded-xl shadow-md hover:opacity-90 transition-opacity">
+          Entrar a la Despensa
+        </Link>
 
       </div>
     </main>
