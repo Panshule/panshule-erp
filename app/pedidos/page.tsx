@@ -3,82 +3,116 @@ import { useEffect, useState } from "react";
 import { supabase } from "../../utils/supabase";
 import Link from "next/link";
 
-export default function Pedidos() {
+export default function GestionPedidos() {
   const [pedidos, setPedidos] = useState<any[]>([]);
-  const [totalSemanal, setTotalSemanal] = useState(0);
-  const [totalAyer, setTotalAyer] = useState(0);
+  const [cargando, setCargando] = useState(true);
 
-  const cargarDatos = async () => {
-    const { data: todos } = await supabase
+  const cargarPedidos = async () => {
+    setCargando(true);
+    // Traemos los pedidos ordenados por fecha de entrega (los más urgentes primero)
+    const { data } = await supabase
       .from("orders")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (todos) setPedidos(todos);
+      .select(`
+        id, 
+        client_name, 
+        delivery_date, 
+        total_amount, 
+        status, 
+        payment_status,
+        order_items(quantity, products(name))
+      `)
+      .order("delivery_date", { ascending: true });
 
-    const hoy = new Date();
-    const sieteDiasAtras = new Date(hoy.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const { data: semanal } = await supabase
-      .from("orders")
-      .select("total_amount")
-      .gte("created_at", sieteDiasAtras.toISOString());
-    const sumaSeman = semanal?.reduce((acc, p) => acc + (p.total_amount || 0), 0) || 0;
-    setTotalSemanal(sumaSeman);
-
-    const ayerInicio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - 1, 0, 0, 0);
-    const ayerFin = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - 1, 23, 59, 59);
-    const { data: ayer } = await supabase
-      .from("orders")
-      .select("total_amount")
-      .gte("created_at", ayerInicio.toISOString())
-      .lte("created_at", ayerFin.toISOString());
-    const sumaAyer = ayer?.reduce((acc, p) => acc + (p.total_amount || 0), 0) || 0;
-    setTotalAyer(sumaAyer);
+    if (data) setPedidos(data);
+    setCargando(false);
   };
 
-  useEffect(() => { cargarDatos(); }, []);
+  useEffect(() => {
+    cargarPedidos();
+  }, []);
+
+  // Función para cambiar si está en el horno, listo, etc.
+  const actualizarEstado = async (id: number, nuevoEstado: string) => {
+    await supabase.from("orders").update({ status: nuevoEstado }).eq("id", id);
+    cargarPedidos(); // Recargamos para ver el cambio
+  };
+
+  // Función para cambiar si pagó o debe
+  const actualizarPago = async (id: number, nuevoPago: string) => {
+    await supabase.from("orders").update({ payment_status: nuevoPago }).eq("id", id);
+    cargarPedidos();
+  };
 
   return (
-    <main className="min-h-screen p-6 bg-panshule-base flex flex-col items-center">
-      <div className="w-full max-w-md">
+    <main className="min-h-screen p-6 bg-panshule-base font-sans flex flex-col items-center">
+      <div className="w-full max-w-2xl">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-black text-panshule-dark">Reporte 📋</h1>
-          <Link href="/" className="text-panshule-accent font-bold underline">Inicio</Link>
+          <h1 className="text-3xl font-black text-panshule-dark">Torre de Control 📋</h1>
+          <Link href="/" className="font-bold underline text-panshule-crust">Volver</Link>
         </div>
 
-        <div className="bg-panshule-dark text-white p-6 rounded-[30px] shadow-xl mb-8">
-          <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">Ingresos Panshule (7 días)</p>
-          <p className="text-5xl font-black text-panshule-sage mb-5">${totalSemanal.toLocaleString()}</p>
-          <div className="grid grid-cols-2 gap-3 border-t border-gray-600 pt-4">
-            <div>
-              <p className="text-xs text-gray-400">Total de Ayer</p>
-              <p className="text-xl font-bold">${totalAyer.toLocaleString()}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-gray-400">Ventas Totales</p>
-              <p className="text-xl font-bold">{pedidos.length}</p>
-            </div>
+        {cargando ? (
+          <p className="text-center font-bold text-gray-500">Cargando comandas...</p>
+        ) : pedidos.length === 0 ? (
+          <div className="bg-white p-8 rounded-[30px] shadow-lg text-center">
+            <p className="text-gray-400 font-bold">No hay pedidos registrados todavía.</p>
           </div>
-        </div>
+        ) : (
+          <div className="grid gap-4">
+            {pedidos.map((pedido) => (
+              <div key={pedido.id} className="bg-white p-5 rounded-[25px] shadow-md border-l-8 border-panshule-sage flex flex-col md:flex-row gap-4 justify-between">
+                
+                {/* Info del Cliente y Pedido */}
+                <div className="flex-1">
+                  <h2 className="text-xl font-black text-panshule-dark">{pedido.client_name}</h2>
+                  <p className="text-sm font-bold text-gray-500 mb-2">
+                    📅 Entrega: {new Date(pedido.delivery_date).toLocaleDateString('es-AR')}
+                  </p>
+                  
+                  <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 mb-3">
+                    <p className="text-xs font-bold text-panshule-crust uppercase mb-1">Detalle a producir:</p>
+                    <ul className="text-sm">
+                      {pedido.order_items?.map((item: any, i: number) => (
+                        <li key={i}>• {item.quantity}x {item.products?.name}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <p className="font-black text-green-700 text-lg">Total: ${pedido.total_amount}</p>
+                </div>
 
-        <h2 className="text-2xl font-bold text-panshule-dark mb-4">Historial</h2>
-        <div className="space-y-4">
-          {pedidos.map((p) => (
-            <div key={p.id} className="bg-white p-5 rounded-2xl shadow-md border-b-4 border-panshule-crust flex justify-between items-center">
-              <div>
-                <p className="text-xl font-black text-panshule-dark">{p.client_name || "Cliente"}</p>
-                <p className="text-[10px] text-gray-400">
-                  {new Date(p.created_at).toLocaleDateString()}
-                </p>
+                {/* Botonera de Estados */}
+                <div className="flex flex-col gap-2 min-w-[180px]">
+                  <p className="text-xs font-bold text-gray-400 uppercase text-center">Estado Producción</p>
+                  <select 
+                    className="p-2 rounded-xl border-2 border-gray-200 font-bold text-sm bg-gray-50 cursor-pointer outline-none"
+                    value={pedido.status || "Pendiente"}
+                    onChange={(e) => actualizarEstado(pedido.id, e.target.value)}
+                  >
+                    <option value="Pendiente">⏳ Pendiente</option>
+                    <option value="En Produccion">🍳 En Producción</option>
+                    <option value="Listo">✅ Listo</option>
+                    <option value="Enviado">🚚 Enviado</option>
+                    <option value="Entregado">🏠 Entregado</option>
+                  </select>
+
+                  <p className="text-xs font-bold text-gray-400 uppercase text-center mt-2">Estado de Pago</p>
+                  <select 
+                    className={`p-2 rounded-xl border-2 font-bold text-sm cursor-pointer outline-none ${
+                      pedido.payment_status === 'Pagado' ? 'border-green-400 bg-green-50 text-green-700' : 'border-red-400 bg-red-50 text-red-700'
+                    }`}
+                    value={pedido.payment_status || "Falta Pagar"}
+                    onChange={(e) => actualizarPago(pedido.id, e.target.value)}
+                  >
+                    <option value="Falta Pagar">❌ Falta Pagar</option>
+                    <option value="Señado">💳 Señado (50%)</option>
+                    <option value="Pagado">💰 Pagado Total</option>
+                  </select>
+                </div>
+
               </div>
-              <div className="text-right">
-                <p className="text-2xl font-black text-panshule-accent">${p.total_amount}</p>
-                <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[10px] font-black uppercase">
-                  {p.status}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </main>
   );
