@@ -17,7 +17,7 @@ export default function Home() {
         <div className="grid gap-3">
           
           {/* BOTÓN IA - JULE (Nuevo) */}
-          <Link href="/chat" className="w-full bg-yellow-400 text-panshule-dark font-black py-4 rounded-2xl border-b-4 border-yellow-700 shadow-lg flex items-center justify-center gap-2 hover:scale-105 transition-transform">
+          <Link href="/consultas" className="w-full bg-yellow-400 text-panshule-dark font-black py-4 rounded-2xl border-b-4 border-yellow-700 shadow-lg flex items-center justify-center gap-2 hover:scale-105 transition-transform">
             ✨ PREGUNTALE A JULE (IA)
           </Link>
 
