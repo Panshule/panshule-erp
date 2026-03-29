@@ -39,7 +39,9 @@ export default function Home() {
               💸 Gastos
             </Link>
           </div>
-
+          <Link href="/dashboard" className="w-full bg-indigo-500 text-white font-black py-3 rounded-2xl border-b-4 border-indigo-800 shadow-sm">
+             📈 Estadísticas Reales
+          </Link>
           {/* Ver Historial */}
           <Link href="/pedidos" className="w-full bg-white text-panshule-dark border-2 border-panshule-crust font-bold py-3 rounded-2xl mt-2 shadow-sm">
             📋 Ver Historial de Pedidos
