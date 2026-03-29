@@ -4,7 +4,10 @@ import Link from "next/link";
 import Image from "next/image";
 
 export default function ChatJule() {
-  const { messages, input, handleInputChange, handleSubmit } = useChat();
+  // Agregamos 'error' e 'isLoading' para espiar qué pasa por detrás
+  const { messages, input, handleInputChange, handleSubmit, error, isLoading } = useChat({
+    api: '/api/chat' // Le forzamos la ruta exacta
+  });
 
   return (
     <main className="min-h-screen p-6 bg-panshule-base flex flex-col items-center font-sans">
@@ -27,6 +30,7 @@ export default function ChatJule() {
                </p>
             </div>
           )}
+          
           {messages.map(m => (
             <div key={m.id} className={`mb-4 ${m.role === 'user' ? 'text-right' : 'text-left'}`}>
               <span className={`inline-block p-4 rounded-2xl shadow-sm max-w-[85%] ${
@@ -38,6 +42,22 @@ export default function ChatJule() {
               </span>
             </div>
           ))}
+
+          {/* Indicador de carga para saber si está procesando */}
+          {isLoading && (
+            <div className="text-left mb-4">
+              <span className="inline-block p-4 rounded-2xl bg-gray-100 text-gray-500 rounded-bl-none animate-pulse">
+                Jule está pensando... 💭
+              </span>
+            </div>
+          )}
+
+          {/* Cartel de Error si algo falla en la conexión */}
+          {error && (
+            <div className="text-center p-3 bg-red-100 text-red-600 rounded-xl mt-2 font-bold text-sm">
+              🚨 Error detectado: {error.message}
+            </div>
+          )}
         </div>
 
         {/* Formulario de envío */}
@@ -47,8 +67,9 @@ export default function ChatJule() {
             value={input}
             placeholder="¿Cómo vienen las ventas?"
             onChange={handleInputChange}
+            disabled={isLoading}
           />
-          <button type="submit" className="bg-panshule-dark text-white px-6 rounded-2xl font-black shadow-lg">
+          <button type="submit" disabled={isLoading} className="bg-panshule-dark text-white px-6 rounded-2xl font-black shadow-lg disabled:opacity-50">
             OK
           </button>
         </form>
