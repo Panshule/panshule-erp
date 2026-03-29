@@ -11,15 +11,15 @@ export default function Dashboard() {
   const cargarFinanzas = async () => {
     // 1. Obtener Ventas Totales
     const { data: ventas } = await supabase.from("orders").select("total_amount");
-    const totalVentas = ventas?.reduce((acc, v) => acc + (v.total_amount || 0), 0) || 0;
+    const totalVentas = ventas?.reduce((acc, v) => acc + (Number(v.total_amount) || 0), 0) || 0;
     setIngresos(totalVentas);
 
-    // 2. Obtener Gastos Extra (Luz, Gas, etc.)
+    // 2. Obtener Gastos Extra
     const { data: gastos } = await supabase.from("expenses").select("amount");
-    const totalGastos = gastos?.reduce((acc, g) => acc + (g.amount || 0), 0) || 0;
+    const totalGastos = gastos?.reduce((acc, g) => acc + (Number(g.amount) || 0), 0) || 0;
     setGastosExtra(totalGastos);
 
-    // 3. Calcular costo de insumos vendidos (Lógica avanzada)
+    // 3. Calcular costo de insumos vendidos (A prueba de fallos)
     const { data: pedidos } = await supabase.from("orders").select(`
       id,
       order_items (
@@ -38,9 +38,9 @@ export default function Dashboard() {
       p.order_items?.forEach((item: any) => {
         item.products?.product_ingredients?.forEach((pi: any) => {
           const ing = pi.ingredients;
-          if (ing && ing.package_weight_grams > 0) {
-            const costoGramo = ing.purchase_cost / ing.package_weight_grams;
-            totalCostoMaterias += (costoGramo * pi.quantity_grams) * item.quantity;
+          if (ing && (ing.package_weight_grams || 0) > 0) {
+            const costoGramo = (ing.purchase_cost || 0) / ing.package_weight_grams;
+            totalCostoMaterias += (costoGramo * (pi.quantity_grams || 0)) * (item.quantity || 1);
           }
         });
       });
@@ -50,7 +50,9 @@ export default function Dashboard() {
 
   useEffect(() => { cargarFinanzas(); }, []);
 
-  const gananciaNeta = ingresos - gastosExtra - costoInsumos;
+  // Matemáticas claras
+  const gananciaBruta = ingresos - costoInsumos;
+  const gananciaNeta = gananciaBruta - gastosExtra;
 
   return (
     <main className="min-h-screen p-6 bg-panshule-base font-sans flex flex-col items-center">
@@ -58,25 +60,30 @@ export default function Dashboard() {
         <h1 className="text-3xl font-black text-panshule-dark mb-6 text-center">Balance Real 📈</h1>
 
         <div className="bg-white p-8 rounded-[40px] shadow-2xl border-b-8 border-panshule-crust mb-6">
-          <p className="text-sm font-bold text-panshule-crust uppercase text-center mb-1">Ganancia Neta Final</p>
+          <p className="text-sm font-bold text-panshule-crust uppercase text-center mb-1">Ganancia NETA Final</p>
           <p className={`text-5xl font-black text-center ${gananciaNeta >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-            ${gananciaNeta.toLocaleString()}
+            ${gananciaNeta.toLocaleString(undefined, { maximumFractionDigits: 0 })}
           </p>
         </div>
 
         <div className="grid gap-4">
           <div className="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm">
-            <span className="font-bold text-gray-500">Ventas Totales (+)</span>
+            <span className="font-bold text-gray-500">Ingresos Totales (+)</span>
             <span className="font-black text-green-600 text-xl">${ingresos.toLocaleString()}</span>
           </div>
 
-          <div className="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm border-l-4 border-red-400">
-            <span className="font-bold text-gray-500">Costo Insumos (-)</span>
-            <span className="font-black text-red-500">${costoInsumos.toFixed(0)}</span>
+          <div className="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm border-l-4 border-orange-400">
+            <span className="font-bold text-gray-500">Costo de Insumos (-)</span>
+            <span className="font-black text-orange-500">${costoInsumos.toFixed(0)}</span>
+          </div>
+
+          <div className="bg-gray-100 p-4 rounded-2xl flex justify-between items-center shadow-inner">
+            <span className="font-black text-panshule-dark">Ganancia Bruta (=)</span>
+            <span className="font-black text-panshule-dark">${gananciaBruta.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
           </div>
 
           <div className="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm border-l-4 border-red-600">
-            <span className="font-bold text-gray-500">Gastos Fijos (-)</span>
+            <span className="font-bold text-gray-500">Gastos Extras (Gas, Luz) (-)</span>
             <span className="font-black text-red-600">${gastosExtra.toLocaleString()}</span>
           </div>
         </div>
